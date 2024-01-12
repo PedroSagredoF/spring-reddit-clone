@@ -1,6 +1,7 @@
 package com.testproject.redditclone.service;
 
 import com.testproject.redditclone.dto.RegisterRequest;
+import com.testproject.redditclone.exceptions.RedditCloneException;
 import com.testproject.redditclone.model.NotificationEmail;
 import com.testproject.redditclone.model.User;
 import com.testproject.redditclone.model.VerificationToken;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -39,8 +41,23 @@ public class AuthServiceImpl implements AuthService{
         mailService.sendMail(new NotificationEmail("Please Activate your Account",
                 user.getEmail(), "Thank you for signing up to Spring Reddit, " +
                 "please click on the below url to activate your account : " +
-                "http://localhost:8080/api/auth/accountVerification/" + token));
+                "http://localhost:8081/api/auth/accountVerification/" + token));
 
+    }
+
+    @Override
+    public void verifyAccount(String token) {
+        Optional<VerificationToken> verificationToken = verificationTokenRepository.findByToken(token);
+        verificationToken.orElseThrow(() -> new RedditCloneException("Invalid Token"));
+        fetchUserAndEnable(verificationToken.get());
+    }
+
+    private void fetchUserAndEnable(VerificationToken verificationToken) {
+        String username = verificationToken.getUser().getUserName();
+        User user = userRepository.findByUserName(username)
+                .orElseThrow(()-> new RedditCloneException("User not found whith name - "+username));
+        user.setEnabled(true);
+        userRepository.save(user);
     }
 
     private String geeneratedVerificationToken(User user) {

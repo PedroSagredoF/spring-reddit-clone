@@ -4,4 +4,6 @@ import com.testproject.redditclone.dto.RegisterRequest;
 
 public interface AuthService {
     public void signUp(RegisterRequest registerRequest);
+
+    void verifyAccount(String token);
 }
